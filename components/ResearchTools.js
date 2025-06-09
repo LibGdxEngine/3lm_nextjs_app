@@ -1,109 +1,136 @@
-'use client'
-
-import { 
-  ScanText, 
-  Database, 
-  Search, 
-  MessageSquare, 
-  Network, 
-  Clock, 
-  Quote, 
-  GitCompare, 
+"use client";
+import { useRouter } from "next/navigation";
+import {
+  ScanText,
+  Database,
+  Search,
+  MessageSquare,
+  Network,
+  Clock,
+  Quote,
+  GitCompare,
   FileDown,
-  ArrowRight
-} from 'lucide-react'
+  ArrowRight,
+} from "lucide-react";
 
 const tools = [
   {
-    id: 'ocr',
-    title: 'OCR Text Extraction',
-    description: 'Extract text from ancient manuscripts, images, and PDF documents with advanced Arabic OCR technology',
+    id: "ocr",
+    title: "OCR Text Extraction",
+    description:
+      "Extract text from ancient manuscripts, images, and PDF documents with advanced Arabic OCR technology",
     icon: ScanText,
-    color: 'from-blue-500 to-cyan-500',
-    features: ['Arabic & Persian Scripts', 'Historical Manuscripts', 'PDF Processing'],
-    delay: '0s'
+    color: "from-blue-500 to-cyan-500",
+    features: [
+      "Arabic & Persian Scripts",
+      "Historical Manuscripts",
+      "PDF Processing",
+    ],
+    delay: "0s",
   },
   {
-    id: 'ner',
-    title: 'Named Entity Recognition',
-    description: 'Identify and structure entities like scholars, places, dates, and concepts from Islamic texts',
+    id: "ner",
+    title: "Named Entity Recognition",
+    description:
+      "Identify and structure entities like scholars, places, dates, and concepts from Islamic texts",
     icon: Database,
-    color: 'from-purple-500 to-violet-500',
-    features: ['Scholar Names', 'Historical Places', 'Date Extraction'],
-    delay: '0.1s'
+    color: "from-purple-500 to-violet-500",
+    features: ["Scholar Names", "Historical Places", "Date Extraction"],
+    delay: "0.1s",
   },
   {
-    id: 'search',
-    title: 'Advanced Search & Analysis',
-    description: 'Perform semantic searches across vast collections of Islamic literature and scholarly works',
+    id: "search",
+    title: "Advanced Search & Analysis",
+    description:
+      "Perform semantic searches across vast collections of Islamic literature and scholarly works",
     icon: Search,
-    color: 'from-emerald-500 to-teal-500',
-    features: ['Semantic Search', 'Cross-Reference', 'Topic Modeling'],
-    delay: '0.2s'
+    color: "from-emerald-500 to-teal-500",
+    features: ["Semantic Search", "Cross-Reference", "Topic Modeling"],
+    delay: "0.2s",
   },
   {
-    id: 'qa',
-    title: 'AI Q&A Assistant',
-    description: 'Get intelligent answers from Islamic texts using advanced language models trained on scholarly works',
+    id: "qa",
+    title: "AI Q&A Assistant",
+    description:
+      "Get intelligent answers from Islamic texts using advanced language models trained on scholarly works",
     icon: MessageSquare,
-    color: 'from-orange-500 to-red-500',
-    features: ['Hadith Analysis', 'Quranic Insights', 'Scholarly Opinions'],
-    delay: '0.3s'
+    color: "from-orange-500 to-red-500",
+    features: ["Hadith Analysis", "Quranic Insights", "Scholarly Opinions"],
+    delay: "0.3s",
   },
   {
-    id: 'graph',
-    title: 'Knowledge Graph View',
-    description: 'Visualize relationships between Islamic concepts, scholars, and historical events in interactive graphs',
+    id: "graph",
+    title: "Knowledge Graph View",
+    description:
+      "Visualize relationships between Islamic concepts, scholars, and historical events in interactive graphs",
     icon: Network,
-    color: 'from-pink-500 to-rose-500',
-    features: ['Entity Relations', 'Scholar Networks', 'Concept Maps'],
-    delay: '0.4s'
+    color: "from-pink-500 to-rose-500",
+    features: ["Entity Relations", "Scholar Networks", "Concept Maps"],
+    delay: "0.4s",
   },
   {
-    id: 'timeline',
-    title: 'Timeline Generation',
-    description: 'Create chronological timelines of Islamic history, scholarly developments, and biographical events',
+    id: "timeline",
+    title: "Timeline Generation",
+    description:
+      "Create chronological timelines of Islamic history, scholarly developments, and biographical events",
     icon: Clock,
-    color: 'from-indigo-500 to-blue-500',
-    features: ['Historical Events', 'Biographical Data', 'Era Analysis'],
-    delay: '0.5s'
+    color: "from-indigo-500 to-blue-500",
+    features: ["Historical Events", "Biographical Data", "Era Analysis"],
+    delay: "0.5s",
   },
   {
-    id: 'citations',
-    title: 'Citations & References',
-    description: 'Find and verify citations, cross-references, and scholarly sources across Islamic literature',
+    id: "citations",
+    title: "Citations & References",
+    description:
+      "Find and verify citations, cross-references, and scholarly sources across Islamic literature",
     icon: Quote,
-    color: 'from-green-500 to-emerald-500',
-    features: ['Source Verification', 'Citation Networks', 'Reference Tracking'],
-    delay: '0.6s'
+    color: "from-green-500 to-emerald-500",
+    features: [
+      "Source Verification",
+      "Citation Networks",
+      "Reference Tracking",
+    ],
+    delay: "0.6s",
   },
   {
-    id: 'comparison',
-    title: 'Document Comparison',
-    description: 'Compare different versions of texts, manuscripts, and scholarly interpretations side by side',
+    id: "comparison",
+    title: "Document Comparison",
+    description:
+      "Compare different versions of texts, manuscripts, and scholarly interpretations side by side",
     icon: GitCompare,
-    color: 'from-yellow-500 to-orange-500',
-    features: ['Text Diff Analysis', 'Manuscript Variants', 'Version Control'],
-    delay: '0.7s'
+    color: "from-yellow-500 to-orange-500",
+    features: ["Text Diff Analysis", "Manuscript Variants", "Version Control"],
+    delay: "0.7s",
   },
   {
-    id: 'export',
-    title: 'Export & Reports',
-    description: 'Generate comprehensive reports and export your research in various formats for publication',
+    id: "export",
+    title: "Export & Reports",
+    description:
+      "Generate comprehensive reports and export your research in various formats for publication",
     icon: FileDown,
-    color: 'from-gray-500 to-slate-500',
-    features: ['PDF Reports', 'Data Export', 'Academic Formatting'],
-    delay: '0.8s'
-  }
-]
+    color: "from-gray-500 to-slate-500",
+    features: ["PDF Reports", "Data Export", "Academic Formatting"],
+    delay: "0.8s",
+  },
+];
 
 export default function ResearchTools() {
+  const router = useRouter();
   const handleToolClick = (toolId) => {
     // For now, we'll log and show an alert
     // In a real app, you'd use Next.js router
-    console.log(`Navigating to ${toolId} tool`)
-    alert(`Navigating to ${toolId.toUpperCase()} tool. This would redirect to /tools/${toolId}`)
-  }
+    if (toolId === "ocr") {
+      router.push("/ocr");
+      return;
+    }else if (toolId === "ner") {
+      router.push("/ner");
+      return;
+    }
+    console.log(`Navigating to ${toolId} tool`);
+    alert(
+      `Navigating to ${toolId.toUpperCase()} tool. This would redirect to /tools/${toolId}`
+    );
+  };
 
   return (
     <section className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
@@ -114,14 +141,15 @@ export default function ResearchTools() {
             Research Tools & Features
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Comprehensive suite of AI-powered tools designed specifically for Islamic research and scholarship
+            Comprehensive suite of AI-powered tools designed specifically for
+            Islamic research and scholarship
           </p>
         </div>
 
         {/* Tools Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {tools.map((tool) => {
-            const IconComponent = tool.icon
+            const IconComponent = tool.icon;
             return (
               <div
                 key={tool.id}
@@ -130,7 +158,9 @@ export default function ResearchTools() {
               >
                 {/* Icon */}
                 <div className="mb-6">
-                  <div className={`w-16 h-16 bg-gradient-to-br ${tool.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                  <div
+                    className={`w-16 h-16 bg-gradient-to-br ${tool.color} rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-lg`}
+                  >
                     <IconComponent className="w-8 h-8 text-white" />
                   </div>
                 </div>
@@ -143,11 +173,14 @@ export default function ResearchTools() {
                   <p className="text-gray-600 leading-relaxed mb-4">
                     {tool.description}
                   </p>
-                  
+
                   {/* Features */}
                   <div className="space-y-2">
                     {tool.features.map((feature, index) => (
-                      <div key={index} className="flex items-center text-sm text-gray-500">
+                      <div
+                        key={index}
+                        className="flex items-center text-sm text-gray-500"
+                      >
                         <div className="w-1.5 h-1.5 bg-islamic-teal rounded-full mr-2"></div>
                         {feature}
                       </div>
@@ -164,18 +197,22 @@ export default function ResearchTools() {
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
-            )
+            );
           })}
         </div>
 
         {/* Call to Action */}
-        <div className="text-center mt-16 animate-fade-in" style={{ animationDelay: '1s' }}>
+        <div
+          className="text-center mt-16 animate-fade-in"
+          style={{ animationDelay: "1s" }}
+        >
           <div className="bg-gradient-to-r from-islamic-green/10 to-islamic-teal/10 rounded-2xl p-8 border border-islamic-green/20">
             <h3 className="text-2xl font-bold gradient-text mb-4">
               Ready to Transform Your Research?
             </h3>
             <p className="text-gray-600 mb-6 max-w-2xl mx-auto">
-              Join thousands of researchers and scholars who are already using our platform to unlock new insights from Islamic texts
+              Join thousands of researchers and scholars who are already using
+              our platform to unlock new insights from Islamic texts
             </p>
             <button className="px-8 py-4 bg-gradient-to-r from-islamic-green to-islamic-teal text-white font-semibold rounded-xl hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300">
               Start Your Research Journey
@@ -184,5 +221,5 @@ export default function ResearchTools() {
         </div>
       </div>
     </section>
-  )
+  );
 }
