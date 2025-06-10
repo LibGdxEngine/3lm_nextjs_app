@@ -11,236 +11,14 @@ import {
   ChevronRight,
   RotateCcw,
 } from "lucide-react";
+import ToolsNav from "./utils/ToolsNav";
+import FileUpload from "./utils/FileUpload";
+import ProgressBar from "./utils/ProgressBar";
+import PageNavigation from "./utils/PageNavigation";
+import ImageDisplay from "./utils/ImageDisplay";
+import TextDisplay from "./utils/TextDisplay";
 
-function FileUpload({
-  onFileSelect,
-  isDragOver,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-  fileInputRef,
-  handleUploadClick,
-  file,
-}) {
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
-      <div
-        className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 ${
-          isDragOver
-            ? "border-green-400 bg-green-50"
-            : "border-gray-300 hover:border-green-400 hover:bg-gray-50"
-        }`}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        onDrop={onDrop}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".pdf"
-          onChange={onFileSelect}
-          className="hidden"
-        />
-        <div className="space-y-4">
-          <Upload className="w-12 h-12 text-gray-400 mx-auto" />
-          <div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              اسحب وأفلت ملف PDF هنا
-            </h3>
-            <p className="text-gray-500 mb-4">أو اضغط لاختيار ملف من جهازك</p>
-            <button
-              onClick={handleUploadClick}
-              className="inline-flex items-center px-6 py-3 bg-green-700 text-white font-medium rounded-lg hover:bg-green-800 transition-colors"
-            >
-              <Upload className="w-5 h-5 ml-2" />
-              اختيار ملف
-            </button>
-          </div>
-          {file && (
-            <div className="text-sm text-gray-600 mt-2">
-              الملف المحدد: {file.name}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function ProgressBar({ isProcessing, progress }) {
-  if (!isProcessing) return null;
-  return (
-    <div className="mt-6">
-      <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-medium text-gray-700">
-          جاري المعالجة...
-        </span>
-        <span className="text-sm text-gray-500">{progress}%</span>
-      </div>
-      <div className="w-full bg-gray-200 rounded-full h-2">
-        <div
-          className="bg-green-600 h-2 rounded-full transition-all duration-300"
-          style={{ width: `${progress}%` }}
-        ></div>
-      </div>
-    </div>
-  );
-}
-
-function PageNavigation({
-  totalPages,
-  currentPage,
-  isLoadingPage,
-  handlePageChange,
-}) {
-  if (totalPages <= 1) return null;
-  return (
-    <div className="flex items-center space-x-reverse space-x-4">
-      <div className="flex items-center bg-gray-100 rounded-lg p-1">
-        <button
-          onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1 || isLoadingPage}
-          className="p-2 rounded-md hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-        <div className="flex items-center px-4 py-2 bg-white rounded-md mx-1">
-          <span className="text-sm font-medium text-gray-900">
-            {currentPage} من {totalPages}
-          </span>
-        </div>
-        <button
-          onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages || isLoadingPage}
-          className="p-2 rounded-md hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-      </div>
-      <button
-        onClick={() => handlePageChange(1)}
-        disabled={currentPage === 1 || isLoadingPage}
-        className="p-2 text-gray-600 hover:text-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-        title="العودة للصفحة الأولى"
-      >
-        <RotateCcw className="w-4 h-4" />
-      </button>
-    </div>
-  );
-}
-
-function ImageDisplay({ imageUrl, isLoadingPage, currentPage, totalPages }) {
-  return (
-    <div className="bg-gray-50 rounded-xl p-4 min-h-[500px] flex items-center justify-center border-2 border-gray-200 relative">
-      {isLoadingPage ? (
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
-          <p className="text-gray-600">جاري تحميل الصفحة...</p>
-        </div>
-      ) : imageUrl ? (
-        <img
-          src={imageUrl}
-          alt={`PDF Preview - Page ${currentPage}`}
-          className="max-w-full max-h-full rounded-lg shadow-md object-contain"
-          style={{ maxHeight: "480px" }}
-        />
-      ) : (
-        <div className="text-center text-gray-500">
-          <Image className="w-16 h-16 mx-auto mb-4 opacity-30" alt="" />
-          <p className="text-lg">لم يتم العثور على صورة</p>
-          <p className="text-sm">تأكد من أن الملف يحتوي على محتوى مرئي</p>
-        </div>
-      )}
-      {totalPages > 1 && !isLoadingPage && (
-        <div className="absolute bottom-2 right-2 bg-black bg-opacity-70 text-white px-2 py-1 rounded text-xs">
-          {currentPage}/{totalPages}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TextDisplay({
-  ocrText,
-  isLoadingPage,
-  currentPage,
-  totalPages,
-  setOcrText,
-}) {
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
-          <FileText className="w-5 h-5 text-green-700 ml-2" />
-          <h4 className="text-lg font-semibold text-gray-900">
-            النص المستخرج {totalPages > 1 ? `- الصفحة ${currentPage}` : ""}
-          </h4>
-        </div>
-        {ocrText && !isLoadingPage && (
-          <div className="flex items-center text-sm text-green-600">
-            <CheckCircle className="w-4 h-4 ml-1" />
-            <span>تم الاستخراج بنجاح</span>
-          </div>
-        )}
-      </div>
-      <div className="relative">
-        {isLoadingPage ? (
-          <div className="w-full h-[500px] bg-gray-50 rounded-xl flex items-center justify-center border-2 border-gray-200">
-            <div className="text-center">
-              <Loader2 className="w-8 h-8 text-green-600 animate-spin mx-auto mb-3" />
-              <p className="text-gray-600">جاري استخراج النص...</p>
-            </div>
-          </div>
-        ) : (
-          <textarea
-            value={ocrText}
-            onChange={(e) => setOcrText(e.target.value)}
-            className="w-full h-[500px] p-4 border-2 border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-right transition-all"
-            placeholder="النص المستخرج سيظهر هنا..."
-            style={{
-              fontFamily: "Arial, sans-serif",
-              lineHeight: "1.8",
-              fontSize: "14px",
-            }}
-          />
-        )}
-        {!isLoadingPage && (
-          <div className="absolute bottom-2 left-2 text-xs text-gray-500 bg-white px-2 rounded">
-            {ocrText.length} حرف
-          </div>
-        )}
-      </div>
-      {!isLoadingPage && (
-        <div className="flex justify-end space-x-reverse space-x-3 pt-4">
-          <button
-            onClick={() => navigator.clipboard.writeText(ocrText)}
-            disabled={!ocrText}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            نسخ النص
-          </button>
-          <button
-            onClick={() => {
-              const blob = new Blob([ocrText], { type: "text/plain" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `extracted-text-page-${currentPage}-${Date.now()}.txt`;
-              a.click();
-              URL.revokeObjectURL(url);
-            }}
-            disabled={!ocrText}
-            className="px-4 py-2 text-sm font-medium text-white bg-green-700 rounded-lg hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            تحميل كملف نصي
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-const PDFUploadPage = () => {
+const page = () => {
   const [file, setFile] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
   const [ocrText, setOcrText] = useState("");
@@ -251,7 +29,6 @@ const PDFUploadPage = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [isLoadingPage, setIsLoadingPage] = useState(false);
   const fileInputRef = useRef(null);
-  const canvasRef = useRef(null);
 
   const handleFileSelect = async (selectedFile) => {
     if (!selectedFile || selectedFile.type !== "application/pdf") {
@@ -362,32 +139,8 @@ const PDFUploadPage = () => {
                 </p>
               </div>
             </div>
-            <nav className="flex space-x-reverse space-x-8">
-              <a
-                href="#"
-                className="text-gray-700 hover:text-green-700 transition-colors"
-              >
-                القرآن
-              </a>
-              <a
-                href="#"
-                className="text-gray-700 hover:text-green-700 transition-colors"
-              >
-                الحديث
-              </a>
-              <a
-                href="#"
-                className="text-gray-700 hover:text-green-700 transition-colors"
-              >
-                التفسير
-              </a>
-              <a
-                href="#"
-                className="text-gray-700 hover:text-green-700 transition-colors"
-              >
-                الفقه
-              </a>
-            </nav>
+            {/* Replace the nav with ToolsNav */}
+            <ToolsNav />
           </div>
         </div>
       </header>
@@ -516,4 +269,4 @@ const PDFUploadPage = () => {
   );
 };
 
-export default PDFUploadPage;
+export default page;
