@@ -89,7 +89,6 @@ const page = () => {
     while (attempts < maxAttempts) {
       try {
         const resultData = await api.get(`books/${id}`);
-        console.log("Polling Book Results:", resultData);
         if (resultData.status === "COMPLETED") {
           const firstPage = resultData.pages && resultData.pages[0];
           // If image_path is a local path, prepend the backend server URL
@@ -142,7 +141,6 @@ const page = () => {
       });
 
       // Debug: log the result to check for book_id
-      console.log("Upload result:", result);
       // Immediately fetch the book after upload
       setBookId(result._id); // Use 'id' instead of 'book_id' as per backend
       setTotalPages(result.total_pages || 0);
