@@ -17,7 +17,9 @@ import ProgressBar from "./utils/ProgressBar";
 import PageNavigation from "./utils/PageNavigation";
 import ImageDisplay from "./utils/ImageDisplay";
 import TextDisplay from "./utils/TextDisplay";
-import api from "../../utils/api"; 
+import ApiService from "../api/ApiService";
+
+const api = new ApiService("http://localhost:8000/api/v1/ocr");
 
 const page = () => {
   const [file, setFile] = useState(null);
@@ -80,101 +82,58 @@ const page = () => {
     [handleFileSelect]
   );
 
-  const startPollingProgress = (id) => {
-    // Clear any existing interval to prevent multiple polls
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-    }
-
-    progressIntervalRef.current = setInterval(async () => {
+  // Polling function to check book status every 3 seconds
+  const pollBookStatus = async (id, maxAttempts = 20) => {
+    let attempts = 0;
+    setIsLoadingPage(true);
+    while (attempts < maxAttempts) {
       try {
-        const response = await fetch(
-          `http://127.0.0.1:8000/books/${id}/progress`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch progress.");
-        }
-        const progressData = await response.json();
-        console.log("Progress:", progressData);
-
-        setTotalPages(progressData.total_pages);
-        const currentProgress =
-          progressData.total_pages > 0
-            ? Math.floor(
-                (progressData.processed_pages / progressData.total_pages) * 100
-              )
-            : 0;
-        setProgress(currentProgress);
-
-        if (progressData.status === "COMPLETED") {
-          clearInterval(progressIntervalRef.current); // Stop polling
-          progressIntervalRef.current = null;
-          setIsProcessing(false); // Hide processing UI
-          fetchBookResults(id); // Fetch final results
-        } else if (progressData.status === "FAILED") {
-          clearInterval(progressIntervalRef.current);
-          progressIntervalRef.current = null;
+        const resultData = await api.get(`books/${id}`);
+        console.log("Polling Book Results:", resultData);
+        if (resultData.status === "COMPLETED") {
+          const firstPage = resultData.pages && resultData.pages[0];
+          // If image_path is a local path, prepend the backend server URL
+          let firstPageImage = firstPage?.image_path || "";
+          if (firstPageImage && !firstPageImage.startsWith("http")) {
+            firstPageImage = `http://localhost:8000${firstPageImage}`;
+          }
+          const firstPageText = firstPage?.text || "";
+          setOcrText(firstPageText);
+          setImageUrl(firstPageImage);
+          setCurrentPage(1);
+          setTotalPages(resultData.total_pages || 1);
+          setIsLoadingPage(false);
           setIsProcessing(false);
-          alert(`معالجة الملف فشلت: ${progressData.message}`);
-          setFile(null); // Clear file on failure
+          return;
         }
       } catch (error) {
-        console.error("Error polling progress:", error);
-        clearInterval(progressIntervalRef.current); // Stop polling on error
-        progressIntervalRef.current = null;
-        setIsProcessing(false);
-        alert(`حدث خطأ أثناء التحقق من التقدم: ${error.message}`);
-        setFile(null);
+        console.error("Error polling book results:", error);
       }
-    }, 2000); // Poll every 2 seconds (adjust as needed)
-  };
-
-  const fetchBookResults = async (id) => {
-    setIsLoadingPage(true); // Indicate loading for results display
-    try {
-      const response = await fetch(`http://127.0.0.1:8000/books/${id}/results`);
-      if (!response.ok) {
-        throw new Error("Failed to fetch book results.");
-      }
-      const resultData = await response.json();
-      console.log("Final Results:", resultData);
-
-      // Assuming your backend returns data for the first page for initial display
-      // You'll likely need another endpoint or logic to fetch individual page data
-      const firstPageText = resultData.ocr_data?.text?.page_1 || "";
-      const firstPageImage = resultData.ocr_data?.images?.page_1 || "";
-
-      setOcrText(firstPageText);
-      setImageUrl(firstPageImage);
-      setCurrentPage(1); // Reset to first page
-      setTotalPages(resultData.ocr_data?.total_pages || 1); // Get actual total pages
-    } catch (error) {
-      console.error("Error fetching book results:", error);
-      alert(`حدث خطأ في جلب النتائج: ${error.message}`);
-    } finally {
-      setIsLoadingPage(false);
+      attempts++;
+      await new Promise((resolve) => setTimeout(resolve, 3000));
     }
+    setIsLoadingPage(false);
+    setIsProcessing(false);
+    alert("المعالجة لم تكتمل بعد. يرجى المحاولة لاحقًا.");
   };
 
   const uploadFileToFastAPI = async (fileToUpload) => {
     const formData = new FormData();
     formData.append("file", fileToUpload); // 'file' must match the parameter name in your FastAPI endpoint
 
-    setIsProcessing(true); // Start showing processing UI immediately
-    setProgress(0); // Reset progress bar
-    setImageUrl(""); // Clear previous results
+    setIsProcessing(true);
+    setProgress(0);
+    setImageUrl("");
     setOcrText("");
-    setFile(fileToUpload); // Set the selected file in state
+    setFile(fileToUpload);
 
     try {
-      // Use the Axios instance to make the POST request
-      const response = await api.post("/books/upload", formData, {
-        // Using '/upload' relative to baseURL
+      // Use the ApiService instance to make the POST request
+      const result = await api.post("books/upload", formData, {
         headers: {
-          "Content-Type": "multipart/form-data", // Essential for file uploads with FormData
+          "Content-Type": "multipart/form-data",
         },
         onUploadProgress: (progressEvent) => {
-          // This callback updates the progress specifically for the upload phase
           const percentCompleted = Math.round(
             (progressEvent.loaded * 100) / progressEvent.total
           );
@@ -182,50 +141,24 @@ const page = () => {
         },
       });
 
-      const result = response.data; // Axios automatically parses JSON response into .data
-      console.log("Upload initiated/successful:", result);
-
-      // Now, assuming your FastAPI immediately returns a book ID and potentially total pages
-      // so you can start polling for OCR progress.
-      setBookId(result.book_id); // Assuming your FastAPI returns book_id in the response
-      setTotalPages(result.total_pages || 0); // May be 0 initially if total pages are determined during OCR
-      // You might also get an initial message or status from `result.message` or `result.status`
-
-      // Start polling for OCR progress (as discussed previously)
-      // startPollingProgress(result.book_id);
+      // Debug: log the result to check for book_id
+      console.log("Upload result:", result);
+      // Immediately fetch the book after upload
+      setBookId(result._id); // Use 'id' instead of 'book_id' as per backend
+      setTotalPages(result.total_pages || 0);
+      // Start polling for book status
+      pollBookStatus(result._id);
     } catch (error) {
       console.error("Error during file upload to FastAPI:", error);
-      // Axios error handling is more robust; error.response, error.request, error.message
       const errorMessage =
         error.response?.data?.detail ||
         error.message ||
         "فشل رفع الملف إلى الخادم";
       alert(`حدث خطأ أثناء رفع الملف: ${errorMessage}`);
       setIsProcessing(false);
-      setFile(null); // Clear the file on error
-      setProgress(0); // Reset progress
+      setFile(null);
+      setProgress(0);
     }
-  };
-
-  const simulatePDFProcessing = async (file) => {
-    // This is a simulation - in a real Next.js app, you'd use PDF.js and Tesseract.js
-    // You might also want to handle this server-side with an API route
-
-    for (let i = 0; i <= 100; i += 10) {
-      setProgress(i);
-      await new Promise((resolve) => setTimeout(resolve, 200));
-    }
-
-    // Simulate PDF with multiple pages
-    setTotalPages(5); // Simulate 5 pages
-    setCurrentPage(1);
-
-    // Simulate successful processing
-    setImageUrl("/api/placeholder/400/500"); // This would be your actual PDF image
-    setOcrText(
-      "هذا نص تجريبي مستخرج من الصفحة الأولى. سيتم استبداله بالنص الفعلي المستخرج من PDF باستخدام تقنية OCR.\n\nThis is sample extracted text from page 1. It will be replaced with actual text extracted from the PDF using OCR technology."
-    );
-    setIsProcessing(false);
   };
 
   const handlePageChange = async (newPage) => {
@@ -234,15 +167,19 @@ const page = () => {
     setIsLoadingPage(true);
     setCurrentPage(newPage);
 
-    // Simulate loading new page
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Simulate different content for different pages
-    setImageUrl("/api/placeholder/400/500");
-    setOcrText(
-      `هذا نص تجريبي مستخرج من الصفحة ${newPage}. محتوى مختلف لكل صفحة.\n\nThis is sample extracted text from page ${newPage}. Different content for each page.`
-    );
-
+    try {
+      // Fetch the specific page data from the backend
+      const pageData = await api.get(`books/${bookId}/pages/${newPage}`);
+      let pageImage = pageData?.image_path || "";
+      if (pageImage && !pageImage.startsWith("http")) {
+        pageImage = `http://localhost:8000${pageImage}`;
+      }
+      setImageUrl(pageImage);
+      setOcrText(pageData?.text || "");
+    } catch (error) {
+      console.error("Error fetching page data:", error);
+      alert("حدث خطأ أثناء جلب بيانات الصفحة");
+    }
     setIsLoadingPage(false);
   };
 

@@ -21,9 +21,9 @@ class ApiService {
   }
 
   // POST request
-  async post(endpoint, data = {}) {
+  async post(endpoint, data = {}, config = {}) {
     try {
-      const response = await this.api.post(endpoint, data);
+      const response = await this.api.post(endpoint, data, config);
       return response.data;
     } catch (error) {
       this.handleError(error);

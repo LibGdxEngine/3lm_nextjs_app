@@ -3,7 +3,7 @@ import { Loader2, Image } from "lucide-react";
 
 export default function ImageDisplay({ imageUrl, isLoadingPage, currentPage, totalPages }) {
   return (
-    <div className="bg-gray-50 rounded-xl p-4 min-h-[500px] flex items-center justify-center border-2 border-gray-200 relative">
+    <div className="mt-11 bg-gray-50 rounded-xl p-4 min-h-[500px] flex items-center justify-center border-2 border-gray-200 relative">
       {isLoadingPage ? (
         <div className="text-center">
           <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
@@ -13,8 +13,8 @@ export default function ImageDisplay({ imageUrl, isLoadingPage, currentPage, tot
         <img
           src={imageUrl}
           alt={`PDF Preview - Page ${currentPage}`}
-          className="max-w-full max-h-full rounded-lg shadow-md object-contain"
-          style={{ maxHeight: "480px" }}
+          className="max-w-full w-auto h-[480px] rounded-lg shadow-md object-cover"
+          style={{ minHeight: "480px", maxHeight: "480px" }}
         />
       ) : (
         <div className="text-center text-gray-500">
