@@ -86,13 +86,13 @@ export default function Footer() {
             {/* Newsletter */}
             <div className="mt-8">
               <h5 className="font-semibold mb-3">قم بمتابعة كل جديد</h5>
-              <div className="flex">
+              <div className=" flex">
                 <input 
                   type="email" 
-                  placeholder="Enter your email"
-                  className="flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-l-lg text-white placeholder-gray-400 focus:outline-none focus:border-islamic-gold"
+                  placeholder="أدخل بريدك الإلكتروني"
+                  className="w-60 flex-1 px-4 py-2 bg-white/10 border border-white/20 rounded-l-lg text-white placeholder-gray-400 focus:outline-none focus:border-islamic-gold"
                 />
-                <button className="px-1 py-2 bg-islamic-gold text-islamic-navy font-semibold rounded-r-lg hover:bg-yellow-400 transition-colors duration-300">
+                <button className="px-2 py-2 bg-islamic-gold text-islamic-navy font-semibold rounded-r-lg hover:bg-yellow-400 transition-colors duration-300">
                   اشتراك 
                 </button>
               </div>
