@@ -1,15 +1,11 @@
 "use client";
 import React, { useState, useRef, useCallback } from "react";
 import {
-  Upload,
   FileText,
-  Image,
   Search,
   CheckCircle,
   Loader2,
-  ChevronLeft,
-  ChevronRight,
-  RotateCcw,
+  Trash2
 } from "lucide-react";
 import ToolsNav from "./utils/ToolsNav";
 import FileUpload from "./utils/FileUpload";
@@ -18,6 +14,7 @@ import PageNavigation from "./utils/PageNavigation";
 import ImageDisplay from "./utils/ImageDisplay";
 import TextDisplay from "./utils/TextDisplay";
 import ApiService from "../api/ApiService";
+import CopyButton from "./utils/CopyButton";
 
 const api = new ApiService("http://localhost:8000/api/v1/ocr");
 
@@ -32,6 +29,10 @@ const page = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [isLoadingPage, setIsLoadingPage] = useState(false);
   const [bookId, setBookId] = useState(null);
+  const [books, setBooks] = useState([]);
+  const [showBooks, setShowBooks] = useState(false);
+  const [booksPage, setBooksPage] = useState(1);
+  const booksPerPage = 3;
   const progressIntervalRef = useRef(null); // Ref to store interval ID
   const fileInputRef = useRef(null);
 
@@ -185,6 +186,35 @@ const page = () => {
     fileInputRef.current?.click();
   };
 
+  const fetchAllBooks = async () => {
+    if (showBooks) {
+      setShowBooks(false);
+      return;
+    }
+    try {
+      const res = await api.get("books");
+      const booksArr = Array.isArray(res) ? res : res || [];
+      setBooks(booksArr);
+      setBooksPage(1);
+      setShowBooks(true);
+    } catch (error) {
+      alert("تعذر جلب جميع الكتب");
+      setBooks([]);
+      setShowBooks(false);
+    }
+  };
+
+  const handleDeleteBook = async (bookId) => {
+    if (!window.confirm("هل أنت متأكد أنك تريد حذف هذا الكتاب؟")) return;
+    try {
+      setShowBooks(false);
+      await api.delete(`books/${bookId}`);
+      setBooks((prev) => prev.filter((b) => (b._id || b.id) !== bookId));
+    } catch (error) {
+      alert("فشل حذف الكتاب");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
@@ -328,6 +358,97 @@ const page = () => {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Button to fetch and display books as cards */}
+        <div className="flex gap-4 my-4">
+          <button
+            onClick={fetchAllBooks}
+            className="bg-green-600 text-white px-4 py-2 rounded shadow"
+          >
+            {showBooks ? "إخفاء الكتب" : "جلب جميع الكتب"}
+          </button>
+        </div>
+        {showBooks && (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
+              {books.length === 0 && (
+                <div className="col-span-full text-center text-gray-500">
+                  لا توجد كتب
+                </div>
+              )}
+              {books
+                .slice((booksPage - 1) * booksPerPage, booksPage * booksPerPage)
+                .map((book) => {
+                  let img = book.pages && book.pages[0] && book.pages[0].image_path;
+                  if (img && !img.startsWith("http")) {
+                    img = `http://localhost:8000${img}`;
+                  }
+                  return (
+                    <div
+                      key={book._id || book.id}
+                      className="bg-white border rounded-lg shadow p-4 flex flex-col items-center relative cursor-pointer hover:shadow-lg transition-shadow"
+                      onClick={async (e) => {
+                        // Prevent click if delete button is pressed
+                        if (e.target.closest("button")) return;
+                        try {
+                          const resultData = await api.get(`books/${book._id || book.id}`);
+                          setBookId(book._id || book.id);
+                          setFile({ name: book.title || book.name || "بدون عنوان" }); // Fake file object for UI
+                          setTotalPages(resultData.total_pages || 1);
+                          setCurrentPage(1);
+                          const firstPage = resultData.pages && resultData.pages[0];
+                          let firstPageImage = firstPage?.image_path || "";
+                          if (firstPageImage && !firstPageImage.startsWith("http")) {
+                            firstPageImage = `http://localhost:8000${firstPageImage}`;
+                          }
+                          setImageUrl(firstPageImage);
+                          setOcrText(firstPage?.text || "");
+                          setShowBooks(false); // Hide books grid
+                        } catch (error) {
+                          alert("تعذر جلب بيانات الكتاب");
+                        }
+                      }}
+                    >
+                      <button
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          handleDeleteBook(book._id || book.id);
+                        }}
+                        className="absolute bottom-2 left-2 text-red-500 hover:text-red-700"
+                        title="حذف الكتاب"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                      {img ? (
+                        <img
+                          src={img}
+                          alt={book.title || book.name || "بدون عنوان"}
+                          className="w-full h-40 object-contain rounded mb-3 bg-white border"
+                        />
+                      ) : (
+                        <div className="w-full h-40 flex items-center justify-center bg-gray-200 rounded mb-3 text-gray-400">
+                          <span className="w-12 h-12">📄</span>
+                        </div>
+                      )}
+                      <div className="font-bold text-lg text-gray-800 mb-2">
+                        {book.title || book.name || "بدون عنوان"}
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+            {books.length > booksPerPage && (
+              <div className="flex justify-center mb-8">
+                <PageNavigation
+                  totalPages={Math.ceil(books.length / booksPerPage)}
+                  currentPage={booksPage}
+                  isLoadingPage={false}
+                  handlePageChange={setBooksPage}
+                />
+              </div>
+            )}
+          </>
         )}
       </main>
     </div>

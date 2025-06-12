@@ -1,5 +1,6 @@
 import React from "react";
 import { FileText, CheckCircle, Loader2 } from "lucide-react";
+import CopyButton from "./CopyButton";
 
 export default function TextDisplay({
   ocrText,
@@ -53,13 +54,7 @@ export default function TextDisplay({
       </div>
       {!isLoadingPage && (
         <div className="flex justify-end space-x-reverse space-x-3 pt-4">
-          <button
-            onClick={() => navigator.clipboard.writeText(ocrText)}
-            disabled={!ocrText}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            نسخ النص
-          </button>
+          <CopyButton text={ocrText} />
           <button
             onClick={() => {
               const blob = new Blob([ocrText], { type: "text/plain" });
