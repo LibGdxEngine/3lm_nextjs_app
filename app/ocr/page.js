@@ -215,6 +215,37 @@ const page = () => {
     }
   };
 
+  // Add save handler
+  const handleSaveText = async () => {
+    if (!bookId || !currentPage) return;
+    try {
+      // Get the page id for the current page
+      const book = books.find((b) => (b._id || b.id) === bookId);
+      let pageId = null;
+      if (book && Array.isArray(book.pages)) {
+        const pageObj = book.pages.find((p) => p.page_number === currentPage || p.page_num === currentPage);
+        pageId = pageObj?._id || pageObj?.id || null;
+      }
+      // Fallback: try to get page id from backend if not found
+      if (!pageId) {
+        try {
+          const pageData = await api.get(`books/${bookId}/pages/${currentPage}`);
+          pageId = pageData._id || pageData.id || null;
+        } catch {}
+      }
+      if (!pageId) {
+        alert("تعذر تحديد الصفحة المطلوبة للحفظ");
+        return;
+      }
+      await api.put(`books/${bookId}/pages/${pageId}`, { new_text: ocrText });
+      console.log(bookId, pageId, ocrText);
+      alert("تم حفظ النص بنجاح");
+      return;
+    } catch (error) {
+      alert("فشل حفظ النص. تحقق من صيغة البيانات أو من الخادم.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
       {/* Header */}
@@ -298,6 +329,15 @@ const page = () => {
                   currentPage={currentPage}
                   totalPages={totalPages}
                 />
+                <div className="flex justify-start gap-2 mt-2">
+                  <button
+                    onClick={handleSaveText}
+                    disabled={!bookId || !currentPage}
+                    className="px-4 py-2 text-sm font-medium text-white bg-green-700 rounded-lg hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    حفظ النص
+                  </button>
+                </div>
                 {totalPages > 3 && (
                   <div className="flex items-center justify-center space-x-reverse space-x-2 pt-2">
                     <span className="text-sm text-gray-600 ml-2">
