@@ -83,25 +83,43 @@ const page = () => {
     [handleFileSelect]
   );
 
+  // Helper to update progress based on processed_pages/total_pages
+  const updateProgressFromBook = (book) => {
+    if (book && book.total_pages > 0) {
+      setProgress(Math.round((book.processed_pages / book.total_pages) * 100));
+    }
+  };
+
   // Polling function to check book status every 3 seconds
-  const pollBookStatus = async (id, maxAttempts = 20) => {
+  const pollBookStatus = async (id, maxAttempts = 6000) => {
     let attempts = 0;
     setIsLoadingPage(true);
+    let lastPageShown = false;
     while (attempts < maxAttempts) {
       try {
         const resultData = await api.get(`books/${id}`);
-        if (resultData.status === "COMPLETED") {
-          const firstPage = resultData.pages && resultData.pages[0];
-          // If image_path is a local path, prepend the backend server URL
-          let firstPageImage = firstPage?.image_path || "";
-          if (firstPageImage && !firstPageImage.startsWith("http")) {
-            firstPageImage = `http://localhost:8000${firstPageImage}`;
-          }
-          const firstPageText = firstPage?.text || "";
+        updateProgressFromBook(resultData);
+        if (resultData.status === "FAILED") {
+          setIsLoadingPage(false);
+          setIsProcessing(false);
+          alert("فشلت المعالجة. يرجى المحاولة لاحقًا.");
+          return;
+        }
+        const firstPage = resultData.pages && resultData.pages[0];
+        let firstPageImage = firstPage?.image_path || "";
+        if (firstPageImage && !firstPageImage.startsWith("http")) {
+          firstPageImage = `http://localhost:8000${firstPageImage}`;
+        }
+        const firstPageText = firstPage?.text || "";
+        // Always update the UI with the latest available page
+        if (firstPage) {
           setOcrText(firstPageText);
           setImageUrl(firstPageImage);
           setCurrentPage(1);
           setTotalPages(resultData.total_pages || 1);
+          lastPageShown = true;
+        }
+        if (resultData.status === "COMPLETED") {
           setIsLoadingPage(false);
           setIsProcessing(false);
           return;
@@ -110,11 +128,13 @@ const page = () => {
         console.error("Error polling book results:", error);
       }
       attempts++;
-      await new Promise((resolve) => setTimeout(resolve, 3000));
+      await new Promise((resolve) => setTimeout(resolve, 6000));
     }
     setIsLoadingPage(false);
     setIsProcessing(false);
-    alert("المعالجة لم تكتمل بعد. يرجى المحاولة لاحقًا.");
+    if (!lastPageShown) {
+      alert("المعالجة لم تكتمل بعد. يرجى المحاولة لاحقًا.");
+    }
   };
 
   const uploadFileToFastAPI = async (fileToUpload) => {
@@ -133,18 +153,13 @@ const page = () => {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round(
-            (progressEvent.loaded * 100) / progressEvent.total
-          );
-          setProgress(percentCompleted);
-        },
       });
 
       // Debug: log the result to check for book_id
       // Immediately fetch the book after upload
       setBookId(result._id); // Use 'id' instead of 'book_id' as per backend
       setTotalPages(result.total_pages || 0);
+      updateProgressFromBook(result);
       // Start polling for book status
       pollBookStatus(result._id);
     } catch (error) {
@@ -406,7 +421,7 @@ const page = () => {
             onClick={fetchAllBooks}
             className="bg-green-600 text-white px-4 py-2 rounded shadow"
           >
-            {showBooks ? "إخفاء الكتب" : "جلب جميع الكتب"}
+            {showBooks ? "إخفاء الكتب" : "عرض جميع الكتب"}
           </button>
         </div>
         {showBooks && (
