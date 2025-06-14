@@ -128,7 +128,7 @@ const page = () => {
         console.error("Error polling book results:", error);
       }
       attempts++;
-      await new Promise((resolve) => setTimeout(resolve, 6000));
+      await new Promise((resolve) => setTimeout(resolve, 10000));
     }
     setIsLoadingPage(false);
     setIsProcessing(false);

@@ -11,7 +11,7 @@ export default function TextDisplay({
 }) {
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className=" flex items-center justify-between">
         <div className="flex items-center">
           <FileText className="w-5 h-5 text-green-700 ml-2" />
           <h4 className="text-lg font-semibold text-gray-900">
@@ -37,7 +37,7 @@ export default function TextDisplay({
           <textarea
             value={ocrText}
             onChange={(e) => setOcrText(e.target.value)}
-            className="w-full h-[500px] p-4 border-2 border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-right transition-all"
+            className="w-full h-[529px] p-4 border-2 border-gray-200 rounded-xl resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500 text-right transition-all"
             placeholder="النص المستخرج سيظهر هنا..."
             style={{
               fontFamily: "Arial, sans-serif",
