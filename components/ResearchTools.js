@@ -125,6 +125,12 @@ export default function ResearchTools() {
     }else if (toolId === "ner") {
       router.push("/ner");
       return;
+    }else if (toolId === "search") {
+      router.push("/ss");
+      return;
+    }else if (toolId === "qa") {
+      router.push("/qa");
+      return;
     }
     console.log(`Navigating to ${toolId} tool`);
     alert(
