@@ -16,15 +16,15 @@ import {
 const tools = [
   {
     id: "ocr",
-    title: "OCR Text Extraction",
+    title: "أستخراج النصوص",
     description:
-      "Extract text from ancient manuscripts, images, and PDF documents with advanced Arabic OCR technology",
+      "استخراج النصوص من المخطوطات القديمة والصور والمستندات باستخدام تقنية التعرف الضوئي على الحروف العربية المتقدمة",
     icon: ScanText,
     color: "from-blue-500 to-cyan-500",
     features: [
-      "Arabic & Persian Scripts",
-      "Historical Manuscripts",
-      "PDF Processing",
+      "النصوص العربية",
+      "الخطوط العربية",
+      "PDF معالجة ملفات",
     ],
     delay: "0s",
   },
@@ -122,15 +122,6 @@ export default function ResearchTools() {
     if (toolId === "ocr") {
       router.push("/ocr");
       return;
-    }else if (toolId === "ner") {
-      router.push("/ner");
-      return;
-    }else if (toolId === "search") {
-      router.push("/ss");
-      return;
-    }else if (toolId === "qa") {
-      router.push("/qa");
-      return;
     }
     console.log(`Navigating to ${toolId} tool`);
     alert(
@@ -144,11 +135,10 @@ export default function ResearchTools() {
         {/* Section Header */}
         <div className="text-center mb-16 animate-fade-in">
           <h2 className="text-4xl md:text-5xl font-bold gradient-text mb-6">
-            Research Tools & Features
+            أدوات البحث والميزات
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Comprehensive suite of AI-powered tools designed specifically for
-            Islamic research and scholarship
+            مجموعة شاملة من الأدوات المدعومة بالذكاء الاصطناعي، مصممة خصيصًا للبحوث والدراسات الإسلامية
           </p>
         </div>
 
@@ -156,12 +146,20 @@ export default function ResearchTools() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {tools.map((tool) => {
             const IconComponent = tool.icon;
+            const isComingSoon = tool.id !== "ocr"; // Only OCR is live, others are WIP
             return (
               <div
                 key={tool.id}
-                className="group islamic-card card-hover p-8 animate-slide-up"
+                className="group islamic-card card-hover p-8 animate-slide-up relative"
                 style={{ animationDelay: tool.delay }}
               >
+                {/* Cover for WIP tools */}
+                {isComingSoon && (
+                  <div className="absolute inset-0 bg-white bg-opacity-80 flex flex-col items-center justify-center z-20 rounded-xl">
+                    <span className="text-lg font-bold text-gray-700 mb-2">قريباً</span>
+                    <span className="text-sm text-gray-500">نحن نعمل على هذه الأداة</span>
+                  </div>
+                )}
                 {/* Icon */}
                 <div className="mb-6">
                   <div

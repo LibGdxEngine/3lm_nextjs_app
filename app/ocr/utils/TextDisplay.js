@@ -8,6 +8,7 @@ export default function TextDisplay({
   currentPage,
   totalPages,
   setOcrText,
+  bookId, // <-- add bookId prop
 }) {
   return (
     <div className="space-y-4">
@@ -26,7 +27,7 @@ export default function TextDisplay({
         )}
       </div>
       <div className="relative">
-        {isLoadingPage ? (
+        {isLoadingPage && !ocrText ? (
           <div className="w-full h-[500px] bg-gray-50 rounded-xl flex items-center justify-center border-2 border-gray-200">
             <div className="text-center">
               <Loader2 className="w-8 h-8 text-green-600 animate-spin mx-auto mb-3" />
@@ -56,19 +57,35 @@ export default function TextDisplay({
         <div className="flex justify-end space-x-reverse space-x-3 pt-4">
           <CopyButton text={ocrText} />
           <button
-            onClick={() => {
-              const blob = new Blob([ocrText], { type: "text/plain" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `extracted-text-page-${currentPage}-${Date.now()}.txt`;
-              a.click();
-              URL.revokeObjectURL(url);
+            onClick={async () => {
+              // Fetch all pages' text and download as a single file
+              let allTexts = "";
+              try {
+                if (!bookId || !totalPages) {
+                  alert("لا يمكن تحميل جميع الصفحات: معرف الكتاب أو عدد الصفحات غير متوفر.");
+                  return;
+                }
+                for (let i = 1; i <= totalPages; i++) {
+                  const res = await fetch(`http://localhost:8000/api/v1/ocr/books/${bookId}/pages/${i}`);
+                  const page = await res.json();
+                  allTexts += `صفحة ${i}:\n${page.text || ""}\n\n`;
+                }
+                // Download as .txt file
+                const blob = new Blob([allTexts], { type: "text/plain" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `extracted-book-${bookId}-${Date.now()}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch (err) {
+                alert("تعذر تحميل جميع الصفحات.");
+              }
             }}
-            disabled={!ocrText}
+            disabled={!ocrText || !totalPages}
             className="px-4 py-2 text-sm font-medium text-white bg-green-700 rounded-lg hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            تحميل كملف نصي
+            تحميل جميع الصفحات كملف نصي
           </button>
         </div>
       )}

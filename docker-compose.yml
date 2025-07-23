@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  nextjs:
+    build: .
+    ports:
+      - "3000:3000"
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
+    volumes:
+      - ./cert:/app/cert:ro
+    environment:
+      - NODE_ENV=production

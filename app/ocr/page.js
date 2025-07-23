@@ -16,9 +16,9 @@ import TextDisplay from "./utils/TextDisplay";
 import ApiService from "../api/ApiService";
 import CopyButton from "./utils/CopyButton";
 
-const api = new ApiService("http://localhost:8000/api/v1/ocr");
+const api = new ApiService("https://localhost:8000/api/v1/ocr");
 
-const page = () => {
+const Page = () => {
   const [file, setFile] = useState(null);
   const [imageUrl, setImageUrl] = useState("");
   const [ocrText, setOcrText] = useState("");
@@ -108,7 +108,7 @@ const page = () => {
         const firstPage = resultData.pages && resultData.pages[0];
         let firstPageImage = firstPage?.image_path || "";
         if (firstPageImage && !firstPageImage.startsWith("http")) {
-          firstPageImage = `http://localhost:8000${firstPageImage}`;
+          firstPageImage = `https://localhost:8000${firstPageImage}`;
         }
         const firstPageText = firstPage?.text || "";
         // Always update the UI with the latest available page
@@ -186,7 +186,7 @@ const page = () => {
       const pageData = await api.get(`books/${bookId}/pages/${newPage}`);
       let pageImage = pageData?.image_path || "";
       if (pageImage && !pageImage.startsWith("http")) {
-        pageImage = `http://localhost:8000${pageImage}`;
+        pageImage = `https://localhost:8000${pageImage}`;
       }
       setImageUrl(pageImage);
       setOcrText(pageData?.text || "");
@@ -383,6 +383,7 @@ const page = () => {
                 currentPage={currentPage}
                 totalPages={totalPages}
                 setOcrText={setOcrText}
+                bookId={bookId} // <-- pass bookId prop
               />
             </div>
           </div>
@@ -418,14 +419,34 @@ const page = () => {
         {/* Button to fetch and display books as cards */}
         <div className="flex gap-4 my-4">
           <button
-            onClick={fetchAllBooks}
+            onClick={async () => {
+              setIsLoadingPage(true); // Show progress bar for books loading
+              await fetchAllBooks();
+              setIsLoadingPage(false);
+            }}
             className="bg-green-600 text-white px-4 py-2 rounded shadow"
           >
             {showBooks ? "إخفاء الكتب" : "عرض جميع الكتب"}
           </button>
         </div>
+        {/* Progress bar for books loading */}
+        {isLoadingPage && !showBooks && (
+          <div className="w-full flex justify-center mb-4">
+            <div className="w-1/2 bg-gray-200 rounded-full h-3">
+              <div className="bg-green-600 h-3 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+            </div>
+          </div>
+        )}
         {showBooks && (
           <>
+            {/* Progress bar when loading a book */}
+            {isLoadingPage && (
+              <div className="w-full flex justify-center mb-4">
+                <div className="w-1/2 bg-gray-200 rounded-full h-3">
+                  <div className="bg-green-600 h-3 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
               {books.length === 0 && (
                 <div className="col-span-full text-center text-gray-500">
@@ -437,32 +458,33 @@ const page = () => {
                 .map((book) => {
                   let img = book.pages && book.pages[0] && book.pages[0].image_path;
                   if (img && !img.startsWith("http")) {
-                    img = `http://localhost:8000${img}`;
+                    img = `https://localhost:8000${img}`;
                   }
                   return (
                     <div
                       key={book._id || book.id}
                       className="bg-white border rounded-lg shadow p-4 flex flex-col items-center relative cursor-pointer hover:shadow-lg transition-shadow"
                       onClick={async (e) => {
-                        // Prevent click if delete button is pressed
                         if (e.target.closest("button")) return;
+                        setIsLoadingPage(true); // Show progress bar for book loading
                         try {
                           const resultData = await api.get(`books/${book._id || book.id}`);
                           setBookId(book._id || book.id);
-                          setFile({ name: book.title || book.name || "بدون عنوان" }); // Fake file object for UI
+                          setFile({ name: book.title || book.name || "بدون عنوان" });
                           setTotalPages(resultData.total_pages || 1);
                           setCurrentPage(1);
                           const firstPage = resultData.pages && resultData.pages[0];
                           let firstPageImage = firstPage?.image_path || "";
                           if (firstPageImage && !firstPageImage.startsWith("http")) {
-                            firstPageImage = `http://localhost:8000${firstPageImage}`;
+                            firstPageImage = `https://localhost:8000${firstPageImage}`;
                           }
                           setImageUrl(firstPageImage);
                           setOcrText(firstPage?.text || "");
-                          setShowBooks(false); // Hide books grid
+                          setShowBooks(false);
                         } catch (error) {
                           alert("تعذر جلب بيانات الكتاب");
                         }
+                        setIsLoadingPage(false); // Hide progress bar after book is loaded
                       }}
                     >
                       <button
@@ -510,4 +532,4 @@ const page = () => {
   );
 };
 
-export default page;
+export default Page;
