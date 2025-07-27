@@ -15,7 +15,7 @@ import ImageDisplay from "./utils/ImageDisplay";
 import TextDisplay from "./utils/TextDisplay";
 import ApiService from "../api/ApiService";
 
-const api = new ApiService("https://192.168.60.100:8000/api/v1/ocr");
+const api = new ApiService("https://192.168.60.100/api/v1/ocr");
 
 const Page = () => {
   const [file, setFile] = useState(null);
@@ -59,18 +59,19 @@ const Page = () => {
     }
 
     setFile(selectedFile);
-    setIsProcessing(true);
-    setProgress(0);
+    setIsProcessing(true); // Show loading bar immediately (uploading)
+    setProgress(-1); // -1 means indeterminate
     setImageUrl("");
     setOcrText("");
 
     try {
-      // Simulate PDF processing (replace with actual PDF.js implementation)
+      // Show loading bar (indeterminate) until upload completes
       await uploadFileToFastAPI(selectedFile);
     } catch (error) {
       console.error("Error processing PDF:", error);
       alert("حدث خطأ في معالجة الملف");
       setIsProcessing(false);
+      setProgress(0);
     }
   };
 
@@ -123,8 +124,12 @@ const Page = () => {
         }
         const firstPage = resultData.pages && resultData.pages[0];
         let firstPageImage = firstPage?.image_path || "";
+        // Always ensure /app prefix
+        if (firstPageImage && !firstPageImage.startsWith("/app")) {
+          firstPageImage = `/app${firstPageImage.startsWith("/") ? firstPageImage : "/" + firstPageImage}`;
+        }
         if (firstPageImage && !firstPageImage.startsWith("http")) {
-          firstPageImage = `https://192.168.60.100:8000${firstPageImage}`;
+          firstPageImage = `https://192.168.60.100${firstPageImage}`;
         }
         const firstPageText = firstPage?.text || "";
         // Always update the UI with the latest available page
@@ -157,8 +162,7 @@ const Page = () => {
     const formData = new FormData();
     formData.append("file", fileToUpload); // 'file' must match the parameter name in your FastAPI endpoint
 
-    setIsProcessing(true);
-    setProgress(0);
+    // Don't set isProcessing here, already set in handleFileSelect
     setImageUrl("");
     setOcrText("");
     setFile(fileToUpload);
@@ -166,28 +170,31 @@ const Page = () => {
     try {
       // Use the ApiService instance to make the POST request
       const result = await api.post("books/upload", formData, {
+        timeout: 180000,
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      // Debug: log the result to check for book_id
-      // Immediately fetch the book after upload
+      // Now that upload is done, switch to processing state and start progress count
+      setIsProcessing(true); // Still processing
+      setProgress(0); // Start progress at 0
       setBookId(result._id); // Use 'id' instead of 'book_id' as per backend
       setTotalPages(result.total_pages || 0);
       updateProgressFromBook(result);
-      // Start polling for book status
+      // Start polling for book status (progress bar will now reflect real progress)
       pollBookStatus(result._id);
+      console.log("File uploaded successfully:", result);
     } catch (error) {
       console.error("Error during file upload to FastAPI:", error);
       const errorMessage =
         error.response?.data?.detail ||
         error.message ||
         "فشل رفع الملف إلى الخادم";
-      alert(`حدث خطأ أثناء رفع الملف: ${errorMessage}`);
       setIsProcessing(false);
       setFile(null);
       setProgress(0);
+      alert(`حدث خطأ أثناء رفع الملف: ${errorMessage}`);
     }
   };
 
@@ -201,8 +208,12 @@ const Page = () => {
       // Fetch the specific page data from the backend
       const pageData = await api.get(`books/${bookId}/pages/${newPage}`);
       let pageImage = pageData?.image_path || "";
+      // Always ensure /app prefix
+      if (pageImage && !pageImage.startsWith("/app")) {
+        pageImage = `/app${pageImage.startsWith("/") ? pageImage : "/" + pageImage}`;
+      }
       if (pageImage && !pageImage.startsWith("http")) {
-        pageImage = `https://192.168.60.100:8000${pageImage}`;
+        pageImage = `https://192.168.60.100${pageImage}`;
       }
       setImageUrl(pageImage);
       setOcrText(pageData?.text || "");
@@ -455,12 +466,6 @@ const Page = () => {
           >
             {showBooks ? "إخفاء الكتب" : "عرض جميع الكتب"}
           </button>
-          <button
-            onClick={testApiCall}
-            className="bg-blue-600 text-white px-4 py-2 rounded shadow"
-          >
-            اختبار الاتصال بالخادم
-          </button>
         </div>
         {/* Progress bar for books loading */}
         {isLoadingPage && !showBooks && (
@@ -490,8 +495,12 @@ const Page = () => {
                 .slice((booksPage - 1) * booksPerPage, booksPage * booksPerPage)
                 .map((book) => {
                   let img = book.pages && book.pages[0] && book.pages[0].image_path;
+                  // Always ensure /app prefix
+                  if (img && !img.startsWith("/app")) {
+                    img = `/app${img.startsWith("/") ? img : "/" + img}`;
+                  }
                   if (img && !img.startsWith("http")) {
-                    img = `https://192.168.60.100:8000${img}`;
+                    img = `https://192.168.60.100${img}`;
                   }
                   return (
                     <div
@@ -508,8 +517,12 @@ const Page = () => {
                           setCurrentPage(1);
                           const firstPage = resultData.pages && resultData.pages[0];
                           let firstPageImage = firstPage?.image_path || "";
+                          // Always ensure /app prefix for displayed book
+                          if (firstPageImage && !firstPageImage.startsWith("/app")) {
+                            firstPageImage = `/app${firstPageImage.startsWith("/") ? firstPageImage : "/" + firstPageImage}`;
+                          }
                           if (firstPageImage && !firstPageImage.startsWith("http")) {
-                            firstPageImage = `https://192.168.60.100:8000${firstPageImage}`;
+                            firstPageImage = `https://192.168.60.100${firstPageImage}`;
                           }
                           setImageUrl(firstPageImage);
                           setOcrText(firstPage?.text || "");

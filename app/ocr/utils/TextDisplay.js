@@ -66,7 +66,7 @@ export default function TextDisplay({
                   return;
                 }
                 for (let i = 1; i <= totalPages; i++) {
-                  const res = await fetch(`http://localhost:8000/api/v1/ocr/books/${bookId}/pages/${i}`);
+                  const res = await fetch(`https://192.168.60.100/api/v1/ocr/books/${bookId}/pages/${i}`);
                   const page = await res.json();
                   allTexts += `صفحة ${i}:\n${page.text || ""}\n\n`;
                 }

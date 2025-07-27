@@ -53,7 +53,7 @@ const DisplayBooks = ({
             let img =
               book.pages && book.pages[0] && book.pages[0].image_path;
             if (img && !img.startsWith("http")) {
-              img = `https://localhost:8000${img}`;
+              img = `https://192.168.60.100${img}`;
             }
             return (
               <div
@@ -73,7 +73,7 @@ const DisplayBooks = ({
                     const firstPage = resultData.pages && resultData.pages[0];
                     let firstPageImage = firstPage?.image_path || "";
                     if (firstPageImage && !firstPageImage.startsWith("http")) {
-                      firstPageImage = `https://localhost:8000${firstPageImage}`;
+                      firstPageImage = `https://192.168.60.100:8000${firstPageImage}`;
                     }
                     setImageUrl(firstPageImage);
                     setOcrText(firstPage?.text || "");

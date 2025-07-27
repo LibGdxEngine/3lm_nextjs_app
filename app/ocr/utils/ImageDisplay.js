@@ -55,7 +55,7 @@ export default function ImageDisplay({ imageUrl, isLoadingPage, currentPage, tot
         </div>
       ) : imageUrl ? (
         <div
-          className="w-full h-[480px] flex items-center justify-center overflow-hidden cursor-grab"
+          className="w-full h-[450px] flex items-center justify-center overflow-hidden cursor-grab"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
