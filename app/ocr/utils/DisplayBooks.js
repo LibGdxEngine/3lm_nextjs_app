@@ -73,7 +73,7 @@ const DisplayBooks = ({
                     const firstPage = resultData.pages && resultData.pages[0];
                     let firstPageImage = firstPage?.image_path || "";
                     if (firstPageImage && !firstPageImage.startsWith("http")) {
-                      firstPageImage = `https://192.168.60.100:8000${firstPageImage}`;
+                      firstPageImage = `https://192.168.60.100${firstPageImage}`;
                     }
                     setImageUrl(firstPageImage);
                     setOcrText(firstPage?.text || "");

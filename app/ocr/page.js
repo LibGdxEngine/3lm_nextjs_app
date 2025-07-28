@@ -3,19 +3,25 @@ import React, { useState, useRef, useCallback } from "react";
 import {
   FileText,
   Search,
-  CheckCircle,
-  Loader2,
   Trash2
 } from "lucide-react";
 import ToolsNav from "./utils/ToolsNav";
 import FileUpload from "./utils/FileUpload";
-import ProgressBar from "./utils/ProgressBar";
-import PageNavigation from "./utils/PageNavigation";
-import ImageDisplay from "./utils/ImageDisplay";
-import TextDisplay from "./utils/TextDisplay";
+import UploadProgress from "./utils/UploadProgress";
 import ApiService from "../api/ApiService";
+import ResultsSection from "./utils/ResultsSection";
 
 const api = new ApiService("https://192.168.60.100/api/v1/ocr");
+
+function getFullImageUrl(imagePath) {
+  if (!imagePath) return "";
+  if (!imagePath.startsWith("/app")) {
+    imagePath = `/app${imagePath.startsWith("/") ? imagePath : "/" + imagePath}`;
+  }
+  let base = api.baseUrl || "";
+  base = base.replace(/\/api\/v1\/ocr$/, "");
+  return `${base}${imagePath}`;
+}
 
 const Page = () => {
   const [file, setFile] = useState(null);
@@ -33,24 +39,6 @@ const Page = () => {
   const [booksPage, setBooksPage] = useState(1);
   const booksPerPage = 3;
   const fileInputRef = useRef(null);
-
-  // Test API connectivity
-  const testApiCall = async () => {
-    try {
-      const res = await api.get("books");
-      alert("نجح الاتصال بالخادم! عدد الكتب: " + (Array.isArray(res) ? res.length : 0));
-    } catch (error) {
-      let msg = "فشل الاتصال بالخادم.\n";
-      if (error.response) {
-        msg += `Response: ${JSON.stringify(error.response.data)}\nStatus: ${error.response.status}`;
-      } else if (error.request) {
-        msg += "لم يتم تلقي أي استجابة من الخادم.";
-      } else {
-        msg += error.message;
-      }
-      alert(msg);
-    }
-  };
 
   const handleFileSelect = async (selectedFile) => {
     if (!selectedFile || selectedFile.type !== "application/pdf") {
@@ -123,14 +111,7 @@ const Page = () => {
           return;
         }
         const firstPage = resultData.pages && resultData.pages[0];
-        let firstPageImage = firstPage?.image_path || "";
-        // Always ensure /app prefix
-        if (firstPageImage && !firstPageImage.startsWith("/app")) {
-          firstPageImage = `/app${firstPageImage.startsWith("/") ? firstPageImage : "/" + firstPageImage}`;
-        }
-        if (firstPageImage && !firstPageImage.startsWith("http")) {
-          firstPageImage = `https://192.168.60.100${firstPageImage}`;
-        }
+        let firstPageImage = getFullImageUrl(firstPage?.image_path);
         const firstPageText = firstPage?.text || "";
         // Always update the UI with the latest available page
         if (firstPage) {
@@ -207,14 +188,7 @@ const Page = () => {
     try {
       // Fetch the specific page data from the backend
       const pageData = await api.get(`books/${bookId}/pages/${newPage}`);
-      let pageImage = pageData?.image_path || "";
-      // Always ensure /app prefix
-      if (pageImage && !pageImage.startsWith("/app")) {
-        pageImage = `/app${pageImage.startsWith("/") ? pageImage : "/" + pageImage}`;
-      }
-      if (pageImage && !pageImage.startsWith("http")) {
-        pageImage = `https://192.168.60.100${pageImage}`;
-      }
+      let pageImage = getFullImageUrl(pageData?.image_path);
       setImageUrl(pageImage);
       setOcrText(pageData?.text || "");
     } catch (error) {
@@ -353,122 +327,45 @@ const Page = () => {
           handleUploadClick={handleUploadClick}
           file={file}
         />
-        <ProgressBar isProcessing={isProcessing} progress={progress} />
+        {/* <ProgressBar isProcessing={isProcessing} /> */}
 
         {/* Results Section - Only show after successful upload */}
         {file && !isProcessing && (imageUrl || ocrText) && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center">
-                <CheckCircle className="w-6 h-6 text-green-600 ml-3" />
-                <h3 className="text-2xl font-bold text-gray-900">
-                  نتائج المعالجة
-                </h3>
-              </div>
-
-              <PageNavigation
-                totalPages={totalPages}
-                currentPage={currentPage}
-                isLoadingPage={isLoadingPage}
-                handlePageChange={handlePageChange}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <div className="space-y-4">
-                <ImageDisplay
-                  imageUrl={imageUrl}
-                  isLoadingPage={isLoadingPage}
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                />
-                <div className="flex justify-start gap-2 mt-2">
-                  <button
-                    onClick={handleSaveText}
-                    disabled={!bookId || !currentPage}
-                    className="px-4 py-2 text-sm font-medium text-white bg-green-700 rounded-lg hover:bg-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                  >
-                    حفظ النص
-                  </button>
-                </div>
-                {totalPages > 3 && (
-                  <div className="flex items-center justify-center space-x-reverse space-x-2 pt-2">
-                    <span className="text-sm text-gray-600 ml-2">
-                      الانتقال السريع:
-                    </span>
-                    {[1, Math.floor(totalPages / 2), totalPages].map(
-                      (pageNum, index) => (
-                        <button
-                          key={index}
-                          onClick={() => handlePageChange(pageNum)}
-                          disabled={pageNum === currentPage || isLoadingPage}
-                          className={`px-3 py-1 text-xs rounded-md transition-colors ${
-                            pageNum === currentPage
-                              ? "bg-green-100 text-green-700"
-                              : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                          } disabled:opacity-50`}
-                        >
-                          {pageNum}
-                        </button>
-                      )
-                    )}
-                  </div>
-                )}
-              </div>
-              <TextDisplay
-                ocrText={ocrText}
-                isLoadingPage={isLoadingPage}
-                currentPage={currentPage}
-                totalPages={totalPages}
-                setOcrText={setOcrText}
-                bookId={bookId} // <-- pass bookId prop
-              />
-            </div>
-          </div>
+          <ResultsSection
+            imageUrl={imageUrl}
+            ocrText={ocrText}
+            isLoadingPage={isLoadingPage}
+            currentPage={currentPage}
+            totalPages={totalPages}
+            setOcrText={setOcrText}
+            bookId={bookId}
+            handlePageChange={handlePageChange}
+            handleSaveText={handleSaveText}
+          />
         )}
 
         {/* Processing State */}
         {isProcessing && (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 mb-8">
-            <div className="text-center">
-              <Loader2 className="w-12 h-12 text-green-600 animate-spin mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                جاري معالجة الملف
-              </h3>
-              <p className="text-gray-600 mb-6">
-                الرجاء الانتظار بينما نقوم باستخراج المحتوى...
-              </p>
-              <div className="max-w-md mx-auto">
-                <div className="flex justify-between text-sm text-gray-600 mb-2">
-                  <span>التقدم</span>
-                  <span>{progress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className="bg-green-600 h-3 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <UploadProgress isProcessing={isProcessing} progress={progress} />
         )}
 
         {/* Button to fetch and display books as cards */}
         <div className="flex gap-4 my-4">
           <button
             onClick={async () => {
+              if (isProcessing) return; // Disable while uploading/processing
               setIsLoadingPage(true); // Show progress bar for books loading
               await fetchAllBooks();
               setIsLoadingPage(false);
             }}
-            className="bg-green-600 text-white px-4 py-2 rounded shadow"
+            className={`bg-green-600 text-white px-4 py-2 rounded shadow${isProcessing ? ' opacity-50 cursor-not-allowed' : ''}`}
+            disabled={isProcessing}
           >
             {showBooks ? "إخفاء الكتب" : "عرض جميع الكتب"}
           </button>
         </div>
         {/* Progress bar for books loading */}
-        {isLoadingPage && !showBooks && (
+        {isLoadingPage && !showBooks && !isProcessing && (
           <div className="w-full flex justify-center mb-4">
             <div className="w-1/2 bg-gray-200 rounded-full h-3">
               <div className="bg-green-600 h-3 rounded-full animate-pulse" style={{ width: '100%' }}></div>
@@ -478,7 +375,7 @@ const Page = () => {
         {showBooks && (
           <>
             {/* Progress bar when loading a book */}
-            {isLoadingPage && (
+            {isLoadingPage && !isProcessing && (
               <div className="w-full flex justify-center mb-4">
                 <div className="w-1/2 bg-gray-200 rounded-full h-3">
                   <div className="bg-green-600 h-3 rounded-full animate-pulse" style={{ width: '100%' }}></div>
@@ -494,14 +391,7 @@ const Page = () => {
               {books
                 .slice((booksPage - 1) * booksPerPage, booksPage * booksPerPage)
                 .map((book) => {
-                  let img = book.pages && book.pages[0] && book.pages[0].image_path;
-                  // Always ensure /app prefix
-                  if (img && !img.startsWith("/app")) {
-                    img = `/app${img.startsWith("/") ? img : "/" + img}`;
-                  }
-                  if (img && !img.startsWith("http")) {
-                    img = `https://192.168.60.100${img}`;
-                  }
+                  let img = getFullImageUrl(book.pages && book.pages[0] && book.pages[0].image_path);
                   return (
                     <div
                       key={book._id || book.id}
@@ -516,14 +406,7 @@ const Page = () => {
                           setTotalPages(resultData.total_pages || 1);
                           setCurrentPage(1);
                           const firstPage = resultData.pages && resultData.pages[0];
-                          let firstPageImage = firstPage?.image_path || "";
-                          // Always ensure /app prefix for displayed book
-                          if (firstPageImage && !firstPageImage.startsWith("/app")) {
-                            firstPageImage = `/app${firstPageImage.startsWith("/") ? firstPageImage : "/" + firstPageImage}`;
-                          }
-                          if (firstPageImage && !firstPageImage.startsWith("http")) {
-                            firstPageImage = `https://192.168.60.100${firstPageImage}`;
-                          }
+                          let firstPageImage = getFullImageUrl(firstPage?.image_path);
                           setImageUrl(firstPageImage);
                           setOcrText(firstPage?.text || "");
                           setShowBooks(false);
@@ -537,6 +420,7 @@ const Page = () => {
                         onClick={(event) => {
                           event.stopPropagation();
                           handleDeleteBook(book._id || book.id);
+                          setFile(null); // Clear file state when deleting book
                         }}
                         className="absolute bottom-2 left-2 text-red-500 hover:text-red-700"
                         title="حذف الكتاب"
@@ -561,6 +445,7 @@ const Page = () => {
                   );
                 })}
             </div>
+
             {books.length > booksPerPage && (
               <div className="flex justify-center mb-8">
                 <button

@@ -49,7 +49,7 @@ export default function TextDisplay({
         )}
         {!isLoadingPage && (
           <div className="absolute bottom-2 left-2 text-xs text-gray-500 bg-white px-2 rounded">
-            {ocrText.length} حرف
+            {ocrText.trim().split(/\s+/).filter(Boolean).length} كلمة
           </div>
         )}
       </div>
