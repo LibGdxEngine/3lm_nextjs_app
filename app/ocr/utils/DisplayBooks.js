@@ -82,7 +82,7 @@ function DisplayBooks({
                 </button>
 
                 {img ? (
-                  <image
+                  <img
                     src={img}
                     alt={book.title || book.name || "بدون عنوان"}
                     className="w-16 h-20 object-contain border rounded"
