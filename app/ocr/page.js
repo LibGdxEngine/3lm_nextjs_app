@@ -366,6 +366,7 @@ const Page = () => {
           <button
             onClick={async () => {
               if (isProcessing) return;
+              setBooks([]); // Clear previous results
               setShowBooks(true); // Show sidebar immediately
               setIsLoadingPage(true);
               await fetchBooksPage(1, searchQuery);
