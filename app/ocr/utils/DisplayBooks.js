@@ -92,7 +92,7 @@ function DisplayBooks({
                 )}
 
                 <div className="flex-1 text-right">
-                  <div className="font-bold text-gray-800 break-words whitespace-normal">
+                  <div className="font-bold text-gray-800 break-words break-all whitespace-normal">
                     {book.title || book.name || "بدون عنوان"}
                   </div>
                 </div>
