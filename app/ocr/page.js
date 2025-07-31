@@ -10,6 +10,7 @@ import FileUpload from "./utils/FileUpload";
 import UploadProgress from "./utils/UploadProgress";
 import ApiService from "../api/ApiService";
 import ResultsSection from "./utils/ResultsSection";
+import DisplayBooks from "./utils/DisplayBooks";
 
 const api = new ApiService("https://192.168.60.100/api/v1/ocr");
 
@@ -37,7 +38,13 @@ const Page = () => {
   const [books, setBooks] = useState([]);
   const [showBooks, setShowBooks] = useState(false);
   const [booksPage, setBooksPage] = useState(1);
-  const booksPerPage = 3;
+  const [deletingBooks, setDeletingBooks] = useState(new Set());
+  const booksPerPage = 5;
+  // Track total books for pagination
+  const [totalBooks, setTotalBooks] = useState(0);
+  // Track has_prev/has_next for pagination controls
+  const [hasPrev, setHasPrev] = useState(false);
+  const [hasNext, setHasNext] = useState(false);
   const fileInputRef = useRef(null);
 
   const handleFileSelect = async (selectedFile) => {
@@ -91,50 +98,56 @@ const Page = () => {
   // Helper to update progress based on processed_pages/total_pages
   const updateProgressFromBook = (book) => {
     if (book && book.total_pages > 0) {
-      setProgress(Math.round((book.processed_pages / book.total_pages) * 100));
+      setProgress(Math.round(book.progress));
     }
   };
 
   // Polling function to check book status every 3 seconds
+  // Polling function to check book progress using /progress endpoint (expects status in response)
   const pollBookStatus = async (id, maxAttempts = 6000) => {
     let attempts = 0;
     setIsLoadingPage(true);
-    let lastPageShown = false;
+    let processingDone = false;
     while (attempts < maxAttempts) {
       try {
-        const resultData = await api.get(`books/${id}`);
-        updateProgressFromBook(resultData);
-        if (resultData.status === "FAILED") {
+        // Only poll the progress endpoint
+        const progressData = await api.get(`books/${id}/progress`);
+        // progressData: { total_pages, processed_pages, progress, status }
+        setTotalPages(progressData.total_pages || 1);
+        setProgress(Math.round(progressData.progress));
+        if (progressData.status === "FAILED") {
           setIsLoadingPage(false);
           setIsProcessing(false);
           alert("فشلت المعالجة. يرجى المحاولة لاحقًا.");
           return;
         }
-        const firstPage = resultData.pages && resultData.pages[0];
-        let firstPageImage = getFullImageUrl(firstPage?.image_path);
-        const firstPageText = firstPage?.text || "";
-        // Always update the UI with the latest available page
-        if (firstPage) {
-          setOcrText(firstPageText);
-          setImageUrl(firstPageImage);
-          setCurrentPage(1);
-          setTotalPages(resultData.total_pages || 1);
-          lastPageShown = true;
-        }
-        if (resultData.status === "COMPLETED") {
+        // If processing is done, fetch the book data once
+        if (progressData.status === "COMPLETED" && progressData.progress >= 100 && progressData.processed_pages === progressData.total_pages) {
+          console.log(progressData)
+          const resultData = await api.get(`books/${id}`);
+          const firstPage = resultData.pages && resultData.pages[0];
+          let firstPageImage = getFullImageUrl(firstPage?.image_path);
+          const firstPageText = firstPage?.text || "";
+          if (firstPage) {
+            setOcrText(firstPageText);
+            setImageUrl(firstPageImage);
+            setCurrentPage(1);
+            setTotalPages(resultData.total_pages || 1);
+          }
           setIsLoadingPage(false);
           setIsProcessing(false);
+          processingDone = true;
           return;
         }
       } catch (error) {
-        console.error("Error polling book results:", error);
+        console.error("Error polling progress:", error);
       }
       attempts++;
-      await new Promise((resolve) => setTimeout(resolve, 6000));
+      await new Promise((resolve) => setTimeout(resolve, 7000));
     }
     setIsLoadingPage(false);
     setIsProcessing(false);
-    if (!lastPageShown) {
+    if (!processingDone) {
       alert("المعالجة لم تكتمل بعد. يرجى المحاولة لاحقًا.");
     }
   };
@@ -164,7 +177,7 @@ const Page = () => {
       setTotalPages(result.total_pages || 0);
       updateProgressFromBook(result);
       // Start polling for book status (progress bar will now reflect real progress)
-      pollBookStatus(result._id);
+      await pollBookStatus(result._id);
       console.log("File uploaded successfully:", result);
     } catch (error) {
       console.error("Error during file upload to FastAPI:", error);
@@ -202,39 +215,38 @@ const Page = () => {
     fileInputRef.current?.click();
   };
 
-  const fetchAllBooks = async () => {
-    if (showBooks) {
-      setShowBooks(false);
-      return;
-    }
+  // Fetch books for a specific page using skip/limit
+  const [searchQuery, setSearchQuery] = useState("");
+  const fetchBooksPage = async (page = 1, query = "") => {
     try {
-      const res = await api.get("books");
-      const booksArr = Array.isArray(res) ? res : res || [];
+      const skip = (page - 1) * booksPerPage;
+      const limit = booksPerPage;
+      const searchParam = query ? `&search=${encodeURIComponent(query)}` : "";
+      const res = await api.get(`books?skip=${skip}&limit=${limit}${searchParam}`);
+      // New backend format: { total, has_prev, has_next, data: [...] }
+      const booksArr = Array.isArray(res.data) ? res.data : [];
+      const totalCount = typeof res.total === 'number' ? res.total : booksArr.length;
       setBooks(booksArr);
-      setBooksPage(1);
+      setBooksPage(page);
       setShowBooks(true);
+      setTotalBooks(totalCount);
+      setHasPrev(!!res.has_prev);
+      setHasNext(!!res.has_next);
     } catch (error) {
-      // Enhanced error logging for debugging
-      console.error("Error fetching all books:", error);
-      if (error.response) {
-        console.error("Response data:", error.response.data);
-        console.error("Status:", error.response.status);
-        console.error("Headers:", error.response.headers);
-      } else if (error.request) {
-        console.error("No response received. Request:", error.request);
-      } else {
-        console.error("Error message:", error.message);
-      }
-      alert("تعذر جلب جميع الكتب\nراجع سجل الأخطاء لمزيد من التفاصيل");
+      console.error("Error fetching books page:", error);
+      alert("تعذر جلب الكتب لهذه الصفحة");
       setBooks([]);
-      setShowBooks(false);
+      setShowBooks(true);
+      setTotalBooks(0);
+      setHasPrev(false);
+      setHasNext(false);
     }
   };
 
   const handleDeleteBook = async (bookId) => {
     if (!window.confirm("هل أنت متأكد أنك تريد حذف هذا الكتاب؟")) return;
     try {
-      setShowBooks(false);
+      // setShowBooks(false);
       await api.delete(`books/${bookId}`);
       setBooks((prev) => prev.filter((b) => (b._id || b.id) !== bookId));
     } catch (error) {
@@ -258,7 +270,7 @@ const Page = () => {
         try {
           const pageData = await api.get(`books/${bookId}/pages/${currentPage}`);
           pageId = pageData._id || pageData.id || null;
-        } catch {}
+        } catch { }
       }
       if (!pageId) {
         alert("تعذر تحديد الصفحة المطلوبة للحفظ");
@@ -299,7 +311,7 @@ const Page = () => {
       </header>
 
       {/* Main Content */}
-      <main oncontextmenu="return false;" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Title Section */}
         <div className="text-center mb-12">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -353,9 +365,9 @@ const Page = () => {
         <div className="flex gap-4 my-4">
           <button
             onClick={async () => {
-              if (isProcessing) return; // Disable while uploading/processing
-              setIsLoadingPage(true); // Show progress bar for books loading
-              await fetchAllBooks();
+              if (isProcessing) return;
+              setIsLoadingPage(true);
+              await fetchBooksPage(1, searchQuery);
               setIsLoadingPage(false);
             }}
             className={`bg-green-600 text-white px-4 py-2 rounded shadow${isProcessing ? ' opacity-50 cursor-not-allowed' : ''}`}
@@ -364,107 +376,68 @@ const Page = () => {
             {showBooks ? "إخفاء الكتب" : "عرض جميع الكتب"}
           </button>
         </div>
-        {/* Progress bar for books loading */}
-        {isLoadingPage && !showBooks && !isProcessing && (
-          <div className="w-full flex justify-center mb-4">
-            <div className="w-1/2 bg-gray-200 rounded-full h-3">
-              <div className="bg-green-600 h-3 rounded-full animate-pulse" style={{ width: '100%' }}></div>
-            </div>
-          </div>
-        )}
+        {/* Remove old progress bar for books loading */}
         {showBooks && (
           <>
-            {/* Progress bar when loading a book */}
-            {isLoadingPage && !isProcessing && (
-              <div className="w-full flex justify-center mb-4">
-                <div className="w-1/2 bg-gray-200 rounded-full h-3">
-                  <div className="bg-green-600 h-3 rounded-full animate-pulse" style={{ width: '100%' }}></div>
-                </div>
+            {/* Overlay */}
+            <div
+              className="fixed inset-0 bg-black bg-opacity-50 z-40"
+              onClick={() => setShowBooks(false)}
+            />
+            {/* Sliding Panel */}
+            <div className="fixed right-0 top-0 h-full w-full sm:w-[400px] bg-white shadow-lg z-50 transform transition-transform duration-300 overflow-y-auto">
+              {/* Header */}
+              <div className="flex justify-between items-center px-4 py-3 border-b">
+                <h2 className="text-xl font-semibold">الكتب</h2>
+                <button onClick={() => setShowBooks(false)} className="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
               </div>
-            )}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-              {books.length === 0 && (
-                <div className="col-span-full text-center text-gray-500">
-                  لا توجد كتب
-                </div>
-              )}
-              {books
-                .slice((booksPage - 1) * booksPerPage, booksPage * booksPerPage)
-                .map((book) => {
-                  let img = getFullImageUrl(book.pages && book.pages[0] && book.pages[0].image_path);
-                  return (
-                    <div
-                      key={book._id || book.id}
-                      className="bg-white border rounded-lg shadow p-4 flex flex-col items-center relative cursor-pointer hover:shadow-lg transition-shadow"
-                      onClick={async (e) => {
-                        if (e.target.closest("button")) return;
-                        setIsLoadingPage(true); // Show progress bar for book loading
-                        try {
-                          const resultData = await api.get(`books/${book._id || book.id}`);
-                          setBookId(book._id || book.id);
-                          setFile({ name: book.title || book.name || "بدون عنوان" });
-                          setTotalPages(resultData.total_pages || 1);
-                          setCurrentPage(1);
-                          const firstPage = resultData.pages && resultData.pages[0];
-                          let firstPageImage = getFullImageUrl(firstPage?.image_path);
-                          setImageUrl(firstPageImage);
-                          setOcrText(firstPage?.text || "");
-                          setShowBooks(false);
-                        } catch (error) {
-                          alert("تعذر جلب بيانات الكتاب");
-                        }
-                        setIsLoadingPage(false); // Hide progress bar after book is loaded
-                      }}
-                    >
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleDeleteBook(book._id || book.id);
-                          setFile(null); // Clear file state when deleting book
-                        }}
-                        className="absolute bottom-2 left-2 text-red-500 hover:text-red-700"
-                        title="حذف الكتاب"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                      {img ? (
-                        <img
-                          src={img}
-                          alt={book.title || book.name || "بدون عنوان"}
-                          className="w-full h-40 object-contain rounded mb-3 bg-white border"
-                        />
-                      ) : (
-                        <div className="w-full h-40 flex items-center justify-center bg-gray-200 rounded mb-3 text-gray-400">
-                          <span className="w-12 h-12">📄</span>
-                        </div>
-                      )}
-                      <div className="font-bold text-lg text-gray-800 mb-2">
-                        {book.title || book.name || "بدون عنوان"}
-                      </div>
-                    </div>
-                  );
-                })}
+              {/* Book List & Controls */}
+              <DisplayBooks
+                books={books}
+                deletingBooks={deletingBooks}
+                getFullImageUrl={getFullImageUrl}
+                handleBookClick={async (bookKey) => {
+                  setIsLoadingPage(true);
+                  try {
+                    const resultData = await api.get(`books/${bookKey}`);
+                    setBookId(bookKey);
+                    setFile({ name: books.find(b => (b._id || b.id) === bookKey)?.title || books.find(b => (b._id || b.id) === bookKey)?.name || "بدون عنوان" });
+                    setTotalPages(resultData.total_pages || 1);
+                    setCurrentPage(1);
+                    const firstPageImage = getFullImageUrl(resultData.pages?.[0]?.image_path);
+                    setImageUrl(firstPageImage);
+                    setOcrText(resultData.pages?.[0]?.text || "");
+                    setShowBooks(false);
+                  } catch (error) {
+                    alert("تعذر جلب بيانات الكتاب");
+                  }
+                  setIsLoadingPage(false);
+                }}
+                handleDeleteBook={(bookKey) => {
+                  setDeletingBooks(prev => new Set([...prev, bookKey]));
+                  setTimeout(() => {
+                    handleDeleteBook(bookKey);
+                    setFile(null);
+                    setDeletingBooks(prev => {
+                      const updated = new Set(prev);
+                      updated.delete(bookKey);
+                      return updated;
+                    });
+                  }, 300);
+                }}
+                isLoadingPage={isLoadingPage}
+                isProcessing={isProcessing}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                fetchBooksPage={fetchBooksPage}
+                booksPage={booksPage}
+                totalBooks={totalBooks}
+                booksPerPage={booksPerPage}
+                hasPrev={hasPrev}
+                hasNext={hasNext}
+                setIsLoadingPage={setIsLoadingPage}
+              />
             </div>
-
-            {books.length > booksPerPage && (
-              <div className="flex justify-center mb-8">
-                <button
-                  onClick={() => setBooksPage((p) => Math.max(1, p - 1))}
-                  disabled={booksPage === 1}
-                  className="px-3 py-1 mx-1 rounded bg-gray-200 text-gray-700"
-                >
-                  السابق
-                </button>
-                <span className="px-3 py-1 mx-1">{booksPage} / {Math.ceil(books.length / booksPerPage)}</span>
-                <button
-                  onClick={() => setBooksPage((p) => Math.min(Math.ceil(books.length / booksPerPage), p + 1))}
-                  disabled={booksPage === Math.ceil(books.length / booksPerPage)}
-                  className="px-3 py-1 mx-1 rounded bg-gray-200 text-gray-700"
-                >
-                  التالي
-                </button>
-              </div>
-            )}
           </>
         )}
       </main>

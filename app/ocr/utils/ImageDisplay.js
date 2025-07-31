@@ -68,6 +68,7 @@ export default function ImageDisplay({ imageUrl, isLoadingPage, currentPage, tot
             className="max-w-none max-h-none rounded-lg shadow-md object-contain transition-transform duration-200"
             style={{ height: "100%", width: "100%", transform: `scale(${zoom}) translate(${imgOffset.x / zoom}px, ${imgOffset.y / zoom}px)` }}
             draggable={false}
+            onContextMenu={(e) => e.preventDefault()}
           />
         </div>
       ) : (
