@@ -223,6 +223,7 @@ const Page = () => {
       const limit = booksPerPage;
       const searchParam = query ? `&search=${encodeURIComponent(query)}` : "";
       const res = await api.get(`books?skip=${skip}&limit=${limit}${searchParam}`);
+      console.log("Fetched books:", res);
       // New backend format: { total, has_prev, has_next, data: [...] }
       const booksArr = Array.isArray(res.data) ? res.data : [];
       const totalCount = typeof res.total === 'number' ? res.total : booksArr.length;
