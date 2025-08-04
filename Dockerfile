@@ -1,20 +1,20 @@
 FROM node:18-alpine
 
-# Set work dir
+# Set production mode
+ENV NODE_ENV=production
+
 WORKDIR /app
 
-# Install dependencies
+# Install production dependencies only
 COPY package*.json ./
-RUN npm install
+RUN npm install --omit=dev
 
-# Copy app files
+# Copy app files and build
 COPY . .
-
-# Build Next.js
 RUN npm run build
 
-# Expose HTTPS port
+# Expose port
 EXPOSE 3000
 
-# Start custom server
+# Run server
 CMD ["node", "server.js"]
