@@ -12,7 +12,7 @@ import ApiService from "../api/ApiService";
 import ResultsSection from "./utils/ResultsSection";
 import DisplayBooks from "./utils/DisplayBooks";
 
-const api = new ApiService("https://localhost:8000/api/v1/ocr");
+const api = new ApiService("https://192.168.60.100/api/v1/ocr");
 
 function getFullImageUrl(imagePath) {
   if (!imagePath) return "";
