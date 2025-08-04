@@ -22,8 +22,8 @@
 //   });
 // });
 
-// server.js (HTTP only)
-const { createServer } = require('http'); // not https
+// server.js (for Docker, HTTP only)
+const { createServer } = require('http'); // use http, not https
 const { parse } = require('url');
 const next = require('next');
 
@@ -35,7 +35,7 @@ app.prepare().then(() => {
   createServer((req, res) => {
     const parsedUrl = parse(req.url, true);
     handle(req, res, parsedUrl);
-  }).listen(3000, '127.0.0.1', () => {
-    console.log('> Server running on http://localhost:3000');
+  }).listen(3000, '0.0.0.0', () => {
+    console.log('> Ready on http://0.0.0.0:3000');
   });
 });
