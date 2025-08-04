@@ -12,7 +12,7 @@ import ApiService from "../api/ApiService";
 import ResultsSection from "./utils/ResultsSection";
 import DisplayBooks from "./utils/DisplayBooks";
 
-const api = new ApiService("https://192.168.60.100/api/v1/ocr");
+const api = new ApiService("https://localhost:8000/api/v1/ocr");
 
 function getFullImageUrl(imagePath) {
   if (!imagePath) return "";
@@ -223,7 +223,6 @@ const Page = () => {
       const limit = booksPerPage;
       const searchParam = query ? `&search=${encodeURIComponent(query)}` : "";
       const res = await api.get(`books?skip=${skip}&limit=${limit}${searchParam}`);
-      console.log("Fetched books:", res);
       // New backend format: { total, has_prev, has_next, data: [...] }
       const booksArr = Array.isArray(res.data) ? res.data : [];
       const totalCount = typeof res.total === 'number' ? res.total : booksArr.length;
@@ -278,7 +277,6 @@ const Page = () => {
         return;
       }
       await api.put(`books/${bookId}/pages/${pageId}`, { new_text: ocrText });
-      console.log(bookId, pageId, ocrText);
       alert("تم حفظ النص بنجاح");
       return;
     } catch (error) {
@@ -368,7 +366,7 @@ const Page = () => {
             onClick={async () => {
               if (isProcessing) return;
               setBooks([]); // Clear previous results
-              setShowBooks(true); // Show sidebar immediately
+              // setShowBooks(true); // Show sidebar immediately
               setIsLoadingPage(true);
               await fetchBooksPage(1, searchQuery);
               setIsLoadingPage(false);

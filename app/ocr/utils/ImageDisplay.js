@@ -11,8 +11,6 @@ export default function ImageDisplay({ imageUrl, isLoadingPage, currentPage, tot
   const handleZoomIn = () => setZoom((z) => Math.min(z + 0.2, 3));
   const handleZoomOut = () => setZoom((z) => Math.max(z - 0.2, 0.5));
   const handleResetZoom = () => setZoom(1);
-  const [isImageLoading, setIsImageLoading] = useState(true);
-  const [hasImageError, setHasImageError] = useState(false);
 
   const handleMouseDown = (e) => {
     if (zoom === 1) return;
@@ -64,31 +62,14 @@ export default function ImageDisplay({ imageUrl, isLoadingPage, currentPage, tot
           onMouseLeave={handleMouseUp}
           style={{ userSelect: drag ? "none" : "auto" }}
         >
-          {isImageLoading && (
-            <div className="absolute z-20 inset-0 bg-white/50 flex items-center justify-center">
-              <Loader2 className="w-10 h-10 text-green-700 animate-spin" />
-            </div>
-          )}
-          {hasImageError ? (
-            <div className="text-center text-red-500">
-              <p className="text-sm">حدث خطأ أثناء تحميل الصورة</p>
-            </div>
-          ) : (
-            <img
-              src={imageUrl}
-              alt={`PDF Preview - Page ${currentPage}`}
-              className="max-w-none max-h-none rounded-lg shadow-md object-contain transition-transform duration-200"
-              style={{ height: "100%", width: "100%", transform: `scale(${zoom}) translate(${imgOffset.x / zoom}px, ${imgOffset.y / zoom}px)` }}
-              draggable={false}
-              onContextMenu={(e) => e.preventDefault()}
-              onLoadStart={() => setIsImageLoading(true)}
-              onLoad={() => setIsImageLoading(false)}
-              onError={() => {
-                setIsImageLoading(false);
-                setHasImageError(true);
-              }}
-            />
-          )}
+          <img
+            src={imageUrl}
+            alt={`PDF Preview - Page ${currentPage}`}
+            className="max-w-none max-h-none rounded-lg shadow-md object-contain transition-transform duration-200"
+            style={{ height: "100%", width: "100%", transform: `scale(${zoom}) translate(${imgOffset.x / zoom}px, ${imgOffset.y / zoom}px)` }}
+            draggable={false}
+            onContextMenu={(e) => e.preventDefault()}
+          />
         </div>
       ) : (
         <div className="text-center text-gray-500">

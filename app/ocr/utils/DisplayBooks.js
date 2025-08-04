@@ -51,7 +51,7 @@ function DisplayBooks({
       ) : (
         <div className="space-y-4">
           {books.map((book) => {
-            let img = getFullImageUrl(book.pages?.[0]?.image_path);
+            let img = getFullImageUrl(book.first_page_image);
             const bookKey = book._id || book.id;
             const isDeleting = deletingBooks.has(bookKey);
             return (
