@@ -52,9 +52,6 @@ function DisplayBooks({
         <div className="space-y-4">
           {books.map((book) => {
             let img = getFullImageUrl(book.first_page_image);
-            console.log("Book: ", book);
-            console.log("first_page_image:", book.first_page_image);
-            console.log("Book image URL:", img);
             const bookKey = book._id || book.id;
             const isDeleting = deletingBooks.has(bookKey);
             return (
