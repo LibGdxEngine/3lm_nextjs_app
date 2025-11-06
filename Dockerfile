@@ -1,17 +1,17 @@
 FROM node:18-alpine
 
-# Set production mode
-ENV NODE_ENV=production
-
 WORKDIR /app
 
-# Install production dependencies only
+# Install all dependencies (including devDependencies needed for build)
 COPY package*.json ./
 RUN npm install
 
 # Copy app files and build
 COPY . .
 RUN npm run build
+
+# Set production mode after build
+ENV NODE_ENV=production
 
 # Expose port
 EXPOSE 3000
