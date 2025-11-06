@@ -11,6 +11,7 @@ import {
   GitCompare,
   FileDown,
   ArrowRight,
+  Globe
 } from "lucide-react";
 
 const tools = [
@@ -27,6 +28,22 @@ const tools = [
       "PDF معالجة ملفات",
     ],
     delay: "0s",
+    isComingSoon: false,
+  },
+  {
+    id: "translation",
+    title: "ترجمة النصوص بدقة عالية لأكثر من 40 لغة عالمية",
+    description:
+      "ترجمة النصوص بدقة عالية لأكثر من 40 لغة عالمية",
+    color: "from-blue-500 to-cyan-500",
+    icon: Globe,
+    features: [
+      "النصوص العربية",
+      "الخطوط العربية",
+      "PDF, Word, Excel معالجة ملفات",
+    ],
+    delay: "0s",
+    isComingSoon: false,
   },
   {
     id: "ner",
@@ -37,6 +54,7 @@ const tools = [
     color: "from-purple-500 to-violet-500",
     features: ["Scholar Names", "Historical Places", "Date Extraction"],
     delay: "0.1s",
+    isComingSoon: true,
   },
   {
     id: "search",
@@ -47,6 +65,7 @@ const tools = [
     color: "from-emerald-500 to-teal-500",
     features: ["Semantic Search", "Cross-Reference", "Topic Modeling"],
     delay: "0.2s",
+    isComingSoon: true,
   },
   {
     id: "qa",
@@ -57,6 +76,7 @@ const tools = [
     color: "from-orange-500 to-red-500",
     features: ["Hadith Analysis", "Quranic Insights", "Scholarly Opinions"],
     delay: "0.3s",
+    isComingSoon: true,
   },
   {
     id: "graph",
@@ -67,6 +87,7 @@ const tools = [
     color: "from-pink-500 to-rose-500",
     features: ["Entity Relations", "Scholar Networks", "Concept Maps"],
     delay: "0.4s",
+    isComingSoon: true,
   },
   {
     id: "timeline",
@@ -77,6 +98,7 @@ const tools = [
     color: "from-indigo-500 to-blue-500",
     features: ["Historical Events", "Biographical Data", "Era Analysis"],
     delay: "0.5s",
+    isComingSoon: true,
   },
   {
     id: "citations",
@@ -91,6 +113,7 @@ const tools = [
       "Reference Tracking",
     ],
     delay: "0.6s",
+    isComingSoon: true,
   },
   {
     id: "comparison",
@@ -101,6 +124,7 @@ const tools = [
     color: "from-yellow-500 to-orange-500",
     features: ["Text Diff Analysis", "Manuscript Variants", "Version Control"],
     delay: "0.7s",
+    isComingSoon: true,
   },
   {
     id: "export",
@@ -111,6 +135,7 @@ const tools = [
     color: "from-gray-500 to-slate-500",
     features: ["PDF Reports", "Data Export", "Academic Formatting"],
     delay: "0.8s",
+    isComingSoon: true,
   },
 ];
 
@@ -121,6 +146,10 @@ export default function ResearchTools() {
     // In a real app, you'd use Next.js router
     if (toolId === "ocr") {
       router.push("/ocr");
+      return;
+    }
+    if (toolId === "translation") {
+      router.push("/translation");
       return;
     }
     console.log(`Navigating to ${toolId} tool`);
@@ -146,7 +175,6 @@ export default function ResearchTools() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {tools.map((tool) => {
             const IconComponent = tool.icon;
-            const isComingSoon = tool.id !== "ocr"; // Only OCR is live, others are WIP
             return (
               <div
                 key={tool.id}
@@ -154,7 +182,7 @@ export default function ResearchTools() {
                 style={{ animationDelay: tool.delay }}
               >
                 {/* Cover for WIP tools */}
-                {isComingSoon && (
+                {tool.isComingSoon && (
                   <div className="absolute inset-0 bg-white bg-opacity-80 flex flex-col items-center justify-center z-20 rounded-xl">
                     <span className="text-lg font-bold text-gray-700 mb-2">قريباً</span>
                     <span className="text-sm text-gray-500">نحن نعمل على هذه الأداة</span>
