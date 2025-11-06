@@ -149,7 +149,7 @@ export default function ResearchTools() {
       return;
     }
     if (toolId === "translation") {
-      router.push("/translation");
+      router.push("/translations");
       return;
     }
     console.log(`Navigating to ${toolId} tool`);
